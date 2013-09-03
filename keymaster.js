@@ -64,7 +64,7 @@
 
   // handle keydown event
   function dispatch(event, scope){
-    var key, handler, k, i, modifiersMatch;
+    var key, handler, k, i, modifiersMatch, filterContext;
     key = event.keyCode;
 
     if (index(_downKeys, key) == -1) {
@@ -81,9 +81,14 @@
     }
     updateModifierKey(event);
 
+    // Provide the current scope as part of the context to the filter function
+    // This allows to change the scope as part of the filter function - only for the current event.
+    filterContext = {};
+    filterContext.scope = scope;
+
     // see if we need to ignore the keypress (filter() can can be overridden)
     // by default ignore key presses if a select, textarea, or input is focused
-    if(!assignKey.filter.call(this, event)) return;
+    if(!assignKey.filter.call(this, event, filterContext)) return;
 
     // abort if no potentially matching shortcuts found
     if (!(key in _handlers)) return;
@@ -93,7 +98,7 @@
       handler = _handlers[key][i];
 
       // see if it's in the current scope
-      if(handler.scope == scope || handler.scope == 'all'){
+      if(handler.scope == filterContext.scope || handler.scope == 'all'){
         // check if modifiers match if any
         modifiersMatch = handler.mods.length > 0;
         for(k in _mods)
@@ -202,7 +207,7 @@
       return _downKeys.slice(0);
   }
 
-  function filter(event){
+  function filter(event, filterContext){
     var tagName = (event.target || event.srcElement).tagName;
     // ignore keypressed in any elements that support keyboard data input
     return !(tagName == 'INPUT' || tagName == 'SELECT' || tagName == 'TEXTAREA');

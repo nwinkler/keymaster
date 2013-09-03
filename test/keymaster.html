@@ -268,6 +268,52 @@
         t.assertEqual('ab', sequence);
       },
 
+      testFilterChangingScope: function(t){
+        var sequence = '', oldFilter = key.filter;
+
+        key('a', function(){ sequence += 'a' });
+        key('b', function(){ sequence += 'b' });
+        key('b', 'capital', function(){ sequence += 'B' });
+        key('d', function(){ sequence += 'd' });
+        key('d', 'capital', function(){ sequence += 'D' });
+
+        key.filter = function(event, filterContext) {
+          if (event.keyCode === 68) {
+            filterContext.scope = 'capital';
+          }
+
+          return true;
+        };
+
+        keydown(65); keyup(65);
+        key.setScope('capital');
+        keydown(66); keyup(66);
+        keydown(65); keyup(65);
+        key.setScope('unknown');
+        keydown(66); keyup(66);
+        key.setScope('all');
+        keydown(65); keyup(65);
+        keydown(68); keyup(68);
+        keydown(66); keyup(66);
+
+        t.assertEqual('abBabadDb', sequence);
+
+        // it should not call second callback after changing scope in one of callbacks
+        var sequence = '';
+
+        key('c', 'a', function(){ sequence += 'a'; key.setScope('b');  });
+        key('c', 'b', function(){ sequence += 'b'; });
+
+        key.setScope('a');
+        keydown(67); keyup(67);
+        keydown(67); keyup(67);
+        key.setScope('all');
+
+        t.assertEqual('ab', sequence);
+
+        key.filter = oldFilter;
+      },
+
       testDeleteScope: function(t){
         var sequence = '';
 
@@ -292,7 +338,7 @@
         var cntIssues = 0, cntFiles = 0;
         key('a', 'issues', function(){ cntIssues++ });
         key('a', 'files', function(){ cntFiles++ });
-        
+
         key.setScope('issues');
         keydown(65);
         keyup(65);
@@ -301,7 +347,7 @@
         keydown(65);
         keyup(65);
         t.assertEqual(1, cntIssues);
-        
+
         key.setScope('files');
         keydown(65);
         keyup(65);
